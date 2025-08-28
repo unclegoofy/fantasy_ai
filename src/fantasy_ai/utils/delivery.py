@@ -4,7 +4,17 @@ import requests
 from email.message import EmailMessage
 from dotenv import load_dotenv
 
+# Load environment variables from .env
 load_dotenv()
+
+# Debug print to confirm .env is loading
+print("SMTP config:", {
+    "host": os.getenv("SMTP_HOST"),
+    "port": os.getenv("SMTP_PORT"),
+    "user": os.getenv("SMTP_USER"),
+    "pass": os.getenv("SMTP_PASS"),
+    "to": os.getenv("EMAIL_TO")
+})
 
 def send_email(subject: str, body: str):
     smtp_host = os.getenv("SMTP_HOST")
@@ -38,11 +48,15 @@ def send_discord(body: str):
         print("❌ DISCORD_WEBHOOK not set in .env")
         return
 
-    try:
-        response = requests.post(webhook, json={"content": body})
-        if response.status_code == 204:
-            print("💬 Discord message sent.")
-        else:
-            print(f"❌ Discord delivery failed: {response.status_code} {response.text}")
-    except Exception as e:
-        print(f"❌ Discord delivery error: {e}")
+    # Split message into safe chunks under Discord's 2000-character limit
+    chunks = [body[i:i+1700] for i in range(0, len(body), 1700)]
+
+    for chunk in chunks:
+        try:
+            response = requests.post(webhook, json={"content": chunk})
+            if response.status_code == 204:
+                print("💬 Discord message sent.")
+            else:
+                print(f"❌ Discord delivery failed: {response.status_code} {response.text}")
+        except Exception as e:
+            print(f"❌ Discord delivery error: {e}")
