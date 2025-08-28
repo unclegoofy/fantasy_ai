@@ -19,6 +19,7 @@ from fantasy_ai.api.sleeper_client import (
 )
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.delivery import send_email, send_discord
+#from fantasy_ai.strategist import generate_weekly_strategy
 
 
 def weekly_report(week_override=None):
@@ -210,6 +211,9 @@ def main():
     digest_parser = subparsers.add_parser("digest", help="Run full weekly digest")
     digest_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
 
+   # strategy_parser = subparsers.add_parser("strategy", help="Generate and deliver weekly strategy digest")
+   # strategy_parser.add_argument("--week", type=int, required=True, help="Week number to generate strategy for")
+
     args = parser.parse_args()
 
     if args.command == "weekly-report":
@@ -220,6 +224,13 @@ def main():
         trade_radar(week_override=args.week)
     elif args.command == "digest":
         digest(week_override=args.week)
+   # elif args.command == "strategy":
+   #     from fantasy_ai.strategist import generate_weekly_strategy
+   #     from fantasy_ai.utils.delivery import send_email, send_discord
+#
+   #     output = generate_weekly_strategy(args.week)
+   #     send_email(f"Strategy Digest — Week {args.week}", output)
+   #     send_discord(output)
     else:
         parser.print_help()
 
