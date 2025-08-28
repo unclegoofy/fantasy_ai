@@ -27,4 +27,4 @@ jobs:
         env:
           LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
         run: |
-          python -m fantasy_ai.cli digest --week $(date +%U)
+          python src/fantasy_ai/cli.py digest --week $(date +%U)
