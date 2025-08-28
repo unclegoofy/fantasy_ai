@@ -26,5 +26,6 @@ jobs:
       - name: Run digest CLI
         env:
           LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
+          PYTHONPATH: ${{ github.workspace }}/src
         run: |
           python src/fantasy_ai/cli.py digest --week $(date +%U)
