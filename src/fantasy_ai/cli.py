@@ -18,6 +18,7 @@ from fantasy_ai.api.sleeper_client import (
     get_players
 )
 from fantasy_ai.utils.config import LEAGUE_ID
+from fantasy_ai.utils.delivery import send_email, send_discord
 
 
 def weekly_report(week_override=None):
@@ -175,13 +176,24 @@ def trade_radar(week_override=None):
         print("-" * 50)
 
 def digest(week_override=None):
-    """Run weekly-report, waivers, and trade-radar in sequence."""
+    """Run weekly-report, waivers, and trade-radar in sequence and deliver output."""
+    from io import StringIO
+    import sys
+
+    buffer = StringIO()
+    sys.stdout = buffer
+
     print("\n📦 Fantasy Digest\n" + "=" * 50)
     weekly_report(week_override)
     waivers(week_override)
     trade_radar(week_override)
     print("=" * 50 + "\n✅ Digest complete.\n")
 
+    sys.stdout = sys.__stdout__
+    output = buffer.getvalue()
+
+    send_email("Fantasy Digest", output)
+    send_discord(output)
 def main():
     parser = argparse.ArgumentParser(description="Fantasy AI CLI")
     subparsers = parser.add_subparsers(dest="command")
