@@ -2,12 +2,6 @@
 fantasy_ai/cli.py
 -----------------
 Command-line interface for Fantasy AI.
-Usage examples:
-    python -m fantasy_ai.cli weekly-report
-    python -m fantasy_ai.cli waivers --week 3
-    python -m fantasy_ai.cli trade-radar
-    python -m fantasy_ai.cli digest
-    python -m fantasy_ai.cli strategy --week 5
 """
 
 import argparse
@@ -190,17 +184,142 @@ def trade_radar(week_override=None):
 
 
 # ---------------------------
-# Digest wrapper
+# Strategy Digest Generator
 # ---------------------------
-def digest(week_override=None):
-    """Run weekly-report, waivers, and trade-radar in sequence and deliver output."""
-    from io import StringIO
-    import sys
+def generate_weekly_strategy(week=None):
+    """
+    Build a real, data-driven weekly strategy digest.
+    Sections:
+    1. 📥 Waiver Wire Analysis
+    2. 📊 Trade Radar
+    3. 📝 Lineup Optimization
+    """
+    if not LEAGUE_ID:
+        return "❌ LEAGUE_ID not set in environment"
 
-    if week_override is None:
-        week_override = get_current_week()
-        print(f"DEBUG: Auto‑detected current NFL week = {week_override}")
+    # Always set week before using it
+    if week is None:
+        league = get_league_info(LEAGUE_ID)
+        week = league.get("week") or 1
+        print(f"DEBUG: Auto‑detected current NFL week = {week}")
 
-    buffer = StringIO()
-    sys.stdout = buffer
-()
+    output_lines = []
+    players = get_players()
+    users = {u["user_id"]: u.get("display_name", f"User {u['user_id']}") for u in get_users(LEAGUE_ID)}
+    rosters = get_rosters(LEAGUE_ID)
+
+    # 1️⃣ Waiver Wire Analysis
+    txns = get_transactions(LEAGUE_ID, week)
+    waiver_targets = []
+    for txn in txns:
+        if txn["type"] not in ["waiver", "free_agent"]:
+            continue
+        adds = txn.get("adds") or {}
+        for pid in adds:
+            p = players.get(pid, {})
+            name = p.get("full_name") or p.get("last_name") or "Unknown"
+            pos = p.get("position", "??")
+            team = p.get("team", "")
+            waiver_targets.append(f"{name} ({pos}, {team})")
+
+    output_lines.append(f"📥 Waiver Targets — Week {week}")
+    if waiver_targets:
+        for wt in sorted(set(waiver_targets)):
+            output_lines.append(f"  - {wt}")
+    else:
+        output_lines.append("  No notable waiver adds this week.")
+
+    # 2️⃣ Trade Radar
+    matchups = get_matchups(LEAGUE_ID, week)
+    proj_map = {m["roster_id"]: m.get("projected_points", 0) for m in matchups}
+
+    depth_map = {}
+    for r in rosters:
+        rid = r["roster_id"]
+        user = users.get(r.get("owner_id"), f"Roster {rid}")
+        depth_map[user] = {}
+        for pid in r.get("players", []):
+            p = players.get(pid, {})
+            pos = p.get("position", "UNK")
+            depth_map[user][pos] = depth_map[user].get(pos, 0) + 1
+
+    output_lines.append(f"\n📊 Trade Radar — Week {week}")
+    low_proj = sorted(proj_map.items(), key=lambda x: x[1])[:3]
+    for rid, proj in low_proj:
+        owner = next((r for r in rosters if r["roster_id"] == rid), {})
+        user_id = owner.get("owner_id")
+        name = users.get(user_id, f"Roster {rid}")
+        output_lines.append(f"⚠️ {name} projected only {proj:.1f} pts")
+        my_depth = depth_map.get(name, {})
+        for other_name, other_depth in depth_map.items():
+            if other_name == name:
+                continue
+            for pos in ["RB", "WR", "TE", "QB"]:
+                if my_depth.get(pos, 0) < 2 and other_depth.get(pos, 0) > 3:
+                    output_lines.append(f"  💡 Consider trading for a {pos} from {other_name}")
+
+    # 3️⃣ Lineup Optimization
+    output_lines.append(f"\n📝 Lineup Tips — Week {week}")
+    for r in rosters:
+        owner = users.get(r.get("owner_id"), f"Roster {r['roster_id']}")
+        starters = r.get("starters", [])
+        bench = [p for p in r.get("players", []) if p not in starters]
+
+        starter_proj = {pid: players.get(pid, {}).get("projected_points", 0) for pid in starters}
+        bench_proj = {pid: players.get(pid, {}).get("projected_points", 0) for pid in bench}
+
+        for s_pid, s_proj in starter_proj.items():
+            for b_pid, b_proj in bench_proj.items():
+                if b_proj > s_proj + 2:  # 2+ point difference
+                    s_name = players.get(s_pid, {}).get("full_name", "Unknown")
+                    b_name = players.get(b_pid, {}).get("full_name", "Unknown")
+                    output_lines.append(
+                        f"  ✅ {owner}: Start {b_name} ({b_proj:.1f} pts) over {s_name} ({s_proj:.1f} pts)"
+                    )
+
+    return "\n".join(output_lines)
+
+    # Weekley Strategy
+    
+def main():
+    parser = argparse.ArgumentParser(description="Fantasy AI CLI")
+    parser.add_argument(
+        "command",
+        choices=["weekly-report", "waivers", "trade-radar", "digest", "strategy"],
+        help="Command to run"
+    )
+    parser.add_argument(
+        "--week",
+        type=int,
+        help="NFL week number (optional, auto-detect if omitted)"
+    )
+    args = parser.parse_args()
+
+    if args.command == "weekly-report":
+        weekly_report(args.week)
+    elif args.command == "waivers":
+        waivers(args.week)
+    elif args.command == "trade-radar":
+        trade_radar(args.week)
+    elif args.command == "digest":
+        # Run all three reports and send combined output
+        from io import StringIO
+        import sys
+        buffer = StringIO()
+        sys.stdout = buffer
+        weekly_report(args.week)
+        waivers(args.week)
+        trade_radar(args.week)
+        sys.stdout = sys.__stdout__
+        output = buffer.getvalue()
+        send_email(f"Weekly Digest — Week {args.week or get_current_week()}", output)
+        send_discord(output)
+    elif args.command == "strategy":
+        output = generate_weekly_strategy(args.week)
+        print(output)  # Show in console for verification
+        send_email(f"Strategy Digest — Week {args.week or get_current_week()}", output)
+        send_discord(output)
+
+
+if __name__ == "__main__":
+    main()
