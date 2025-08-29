@@ -2,10 +2,12 @@
 fantasy_ai/cli.py
 -----------------
 Command-line interface for Fantasy AI.
-Usage:
-    python -m fantasy_ai.cli weekly-report [--week 1]
-    python -m fantasy_ai.cli waivers [--week 1]
-    python -m fantasy_ai.cli trade-radar [--week 1]
+Usage examples:
+    python -m fantasy_ai.cli weekly-report
+    python -m fantasy_ai.cli waivers --week 3
+    python -m fantasy_ai.cli trade-radar
+    python -m fantasy_ai.cli digest
+    python -m fantasy_ai.cli strategy --week 5
 """
 
 import argparse
@@ -20,14 +22,27 @@ from fantasy_ai.api.sleeper_client import (
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.delivery import send_email, send_discord
 
-# --- New helper ---
+
+# ---------------------------
+# Helper: Auto-detect NFL week
+# ---------------------------
 def get_current_week():
     """Fetch the current NFL week from Sleeper."""
     if not LEAGUE_ID:
-        print("❌ LEAGUE_ID not set in .env")
+        print("❌ LEAGUE_ID not set in environment")
         return 1
     league = get_league_info(LEAGUE_ID)
     return league.get("week") or 1
+
+
+# ---------------------------
+# Core report functions
+# ---------------------------
+def weekly_report(week_override=None):
+    """Fetch and display matchups + projections for the given week."""
+    if not LEAGUE_ID:
+        print("❌ LEAGUE_ID not set in environment")
+        return
 
     league = get_league_info(LEAGUE_ID)
     season = league.get("season")
@@ -75,7 +90,7 @@ def get_current_week():
 def waivers(week_override=None):
     """Show waiver pickups and drops for a given week."""
     if not LEAGUE_ID:
-        print("❌ LEAGUE_ID not set in .env")
+        print("❌ LEAGUE_ID not set in environment")
         return
 
     week = week_override or 1
@@ -111,21 +126,17 @@ def waivers(week_override=None):
 
         for pid in adds:
             p = players.get(pid, {})
-            name = p.get("full_name") or p.get("last_name")
-            if not name and p.get("position") == "DEF":
+            name = p.get("full_name") or p.get("last_name") or "Unknown"
+            if p.get("position") == "DEF" and not p.get("full_name"):
                 name = f"{p.get('team', 'Unknown')} DEF"
-            if not name:
-                name = "Unknown"
             pos = p.get("position", "??")
             print(f"➕ {name:25} ({pos}) added by {creator}")
 
         for pid in drops:
             p = players.get(pid, {})
-            name = p.get("full_name") or p.get("last_name")
-            if not name and p.get("position") == "DEF":
+            name = p.get("full_name") or p.get("last_name") or "Unknown"
+            if p.get("position") == "DEF" and not p.get("full_name"):
                 name = f"{p.get('team', 'Unknown')} DEF"
-            if not name:
-                name = "Unknown"
             pos = p.get("position", "??")
             print(f"➖ {name:25} ({pos}) dropped by {creator}")
 
@@ -137,7 +148,7 @@ def waivers(week_override=None):
 def trade_radar(week_override=None):
     """Surface strategic trade targets based on scoring gaps and roster depth."""
     if not LEAGUE_ID:
-        print("❌ LEAGUE_ID not set in .env")
+        print("❌ LEAGUE_ID not set in environment")
         return
 
     week = week_override or 1
@@ -177,75 +188,19 @@ def trade_radar(week_override=None):
                     print(f"💡 Consider trading for a {pos} from {other_name}")
         print("-" * 50)
 
+
+# ---------------------------
+# Digest wrapper
+# ---------------------------
 def digest(week_override=None):
     """Run weekly-report, waivers, and trade-radar in sequence and deliver output."""
     from io import StringIO
     import sys
 
-    # Auto-detect week if not provided
     if week_override is None:
         week_override = get_current_week()
         print(f"DEBUG: Auto‑detected current NFL week = {week_override}")
 
     buffer = StringIO()
     sys.stdout = buffer
-
-    print("\n📦 Fantasy Digest\n" + "=" * 50)
-    weekly_report(week_override)
-    waivers(week_override)
-    trade_radar(week_override)
-    print("=" * 50 + "\n✅ Digest complete.\n")
-
-    sys.stdout = sys.__stdout__
-    output = buffer.getvalue()
-
-    send_email(f"Fantasy Digest — Week {week_override}", output)
-    send_discord(output)
-
-def main():
-    parser = argparse.ArgumentParser(description="Fantasy AI CLI")
-    subparsers = parser.add_subparsers(dest="command")
-
-    report_parser = subparsers.add_parser("weekly-report", help="Show matchups and projections")
-    report_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
-
-    waiver_parser = subparsers.add_parser("waivers", help="Show waiver pickups and drops")
-    waiver_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
-
-    radar_parser = subparsers.add_parser("trade-radar", help="Surface strategic trade targets")
-    radar_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
-
-    digest_parser = subparsers.add_parser("digest", help="Run full weekly digest")
-    digest_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
-
-    strategy_parser = subparsers.add_parser("strategy", help="Generate and deliver weekly strategy digest")
-    strategy_parser.add_argument("--week", type=int, help="Week number to generate strategy for (defaults to current NFL week)")
-
-    args = parser.parse_args()
-
-    if args.command == "weekly-report":
-        weekly_report(week_override=args.week)
-    elif args.command == "waivers":
-        waivers(week_override=args.week)
-    elif args.command == "trade-radar":
-        trade_radar(week_override=args.week)
-    elif args.command == "digest":
-        digest(week_override=args.week)
-    elif args.command == "strategy":
-        from fantasy_ai.strategist import generate_weekly_strategy
-
-        week = args.week
-        if week is None:
-            week = get_current_week()
-            print(f"DEBUG: Auto‑detected current NFL week = {week}")
-
-        output = generate_weekly_strategy(week)
-        send_email(f"Strategy Digest — Week {week}", output)
-        send_discord(output)
-    
-    else:
-        parser.print_help()
-
-
-if __name__ == "__main__":
-    main()
+()
