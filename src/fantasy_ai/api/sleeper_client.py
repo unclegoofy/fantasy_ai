@@ -52,6 +52,16 @@ def get_rosters(league_id: str) -> List[Dict[str, Any]]:
     """Fetch all roster objects for the given league."""
     return _get(f"league/{league_id}/rosters")
 
+def get_rostered(league_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Return the roster object for the given user_id.
+    """
+    rosters = get_rosters(league_id)
+    for r in rosters:
+        if r.get("owner_id") == user_id:
+            return r
+    return None
+
 
 def get_matchups(league_id: str, week: int) -> List[Dict[str, Any]]:
     """Fetch all matchups for a specific week in the given league."""
