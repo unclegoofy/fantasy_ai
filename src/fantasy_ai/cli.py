@@ -19,14 +19,15 @@ from fantasy_ai.api.sleeper_client import (
 )
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.delivery import send_email, send_discord
-#from fantasy_ai.strategist import generate_weekly_strategy
 
-
-def weekly_report(week_override=None):
-    """Fetch and display matchups + projections for the given week."""
+# --- New helper ---
+def get_current_week():
+    """Fetch the current NFL week from Sleeper."""
     if not LEAGUE_ID:
         print("❌ LEAGUE_ID not set in .env")
-        return
+        return 1
+    league = get_league_info(LEAGUE_ID)
+    return league.get("week") or 1
 
     league = get_league_info(LEAGUE_ID)
     season = league.get("season")
@@ -181,6 +182,11 @@ def digest(week_override=None):
     from io import StringIO
     import sys
 
+    # Auto-detect week if not provided
+    if week_override is None:
+        week_override = get_current_week()
+        print(f"DEBUG: Auto‑detected current NFL week = {week_override}")
+
     buffer = StringIO()
     sys.stdout = buffer
 
@@ -193,8 +199,9 @@ def digest(week_override=None):
     sys.stdout = sys.__stdout__
     output = buffer.getvalue()
 
-    send_email("Fantasy Digest", output)
+    send_email(f"Fantasy Digest — Week {week_override}", output)
     send_discord(output)
+
 def main():
     parser = argparse.ArgumentParser(description="Fantasy AI CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -212,7 +219,7 @@ def main():
     digest_parser.add_argument("--week", type=int, help="Specify week number (1–18)")
 
     strategy_parser = subparsers.add_parser("strategy", help="Generate and deliver weekly strategy digest")
-    strategy_parser.add_argument("--week", type=int, required=True, help="Week number to generate strategy for")
+    strategy_parser.add_argument("--week", type=int, help="Week number to generate strategy for (defaults to current NFL week)")
 
     args = parser.parse_args()
 
@@ -226,11 +233,16 @@ def main():
         digest(week_override=args.week)
     elif args.command == "strategy":
         from fantasy_ai.strategist import generate_weekly_strategy
-        from fantasy_ai.utils.delivery import send_email, send_discord
 
-        output = generate_weekly_strategy(args.week)
-        send_email(f"Strategy Digest — Week {args.week}", output)
+        week = args.week
+        if week is None:
+            week = get_current_week()
+            print(f"DEBUG: Auto‑detected current NFL week = {week}")
+
+        output = generate_weekly_strategy(week)
+        send_email(f"Strategy Digest — Week {week}", output)
         send_discord(output)
+    
     else:
         parser.print_help()
 
