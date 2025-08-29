@@ -25,7 +25,15 @@ jobs:
 
       - name: Run digest CLI
         env:
-          LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
           PYTHONPATH: ${{ github.workspace }}/src
+          LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
+          SLEEPER_DISPLAY_NAME: ${{ secrets.SLEEPER_DISPLAY_NAME }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SEND_FROM: ${{ secrets.SEND_FROM }}
         run: |
           python src/fantasy_ai/cli.py digest --week $(date +%U)
