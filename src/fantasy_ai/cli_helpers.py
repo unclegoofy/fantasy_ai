@@ -1,3 +1,6 @@
+from fantasy_ai.api.sleeper_client import get_league_info
+from fantasy_ai.utils.config import LEAGUE_ID
+
 def get_current_week():
     """Fetch the current NFL week from Sleeper."""
     if not LEAGUE_ID:
