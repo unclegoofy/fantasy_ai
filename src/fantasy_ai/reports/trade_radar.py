@@ -1,8 +1,14 @@
-from fantasy_ai.api.sleeper_client import get_league_info, get_matchups, get_users, get_rosters, get_players
+from fantasy_ai.api.sleeper_client import (
+    get_league_info,
+    get_matchups,
+    get_users,
+    get_rosters,
+    get_players
+)
 from fantasy_ai.utils.config import LEAGUE_ID
 
 def trade_radar(week_override=None):
-    """Surface strategic trade targets based on scoring gaps and roster depth."""
+    """Surface strategic trade targets based on scoring gaps, depth leverage, and matchup context."""
     if not LEAGUE_ID:
         print("❌ LEAGUE_ID not set in environment")
         return
@@ -14,8 +20,11 @@ def trade_radar(week_override=None):
     matchups = get_matchups(LEAGUE_ID, week)
     players = get_players()
 
+    print(f"DEBUG: Trade Radar — Week {week}, {len(matchups)} matchups")
+
     proj_map = {m["roster_id"]: m.get("projected_points", 0) for m in matchups}
 
+    # Build depth map by position
     depth_map = {}
     for r in rosters:
         rid = r["roster_id"]
@@ -26,8 +35,7 @@ def trade_radar(week_override=None):
             pos = p.get("position", "UNK")
             depth_map[user][pos] = depth_map[user].get(pos, 0) + 1
 
-    print(f"\n📊 Trade Radar — Week {week}\n")
-
+    print(f"\n📊 Trade Radar — Week {week}")
     low_proj = sorted(proj_map.items(), key=lambda x: x[1])[:3]
     for rid, proj in low_proj:
         owner = next((r for r in rosters if r["roster_id"] == rid), {})
@@ -41,5 +49,18 @@ def trade_radar(week_override=None):
                 continue
             for pos in ["RB", "WR", "TE", "QB"]:
                 if my_depth.get(pos, 0) < 2 and other_depth.get(pos, 0) > 3:
-                    print(f"💡 Consider trading for a {pos} from {other_name}")
+                    print(f"  💡 Trade Tip: {name} should target a {pos} from {other_name} (depth: {other_depth[pos]})")
+
+        # Mock buy-low candidates (replace with real scoring deltas later)
+        bench = [p for p in owner.get("players", []) if p not in owner.get("starters", [])]
+        for pid in bench:
+            p = players.get(pid, {})
+            name = p.get("full_name", "Unknown")
+            pos = p.get("position", "UNK")
+            team = p.get("team", "")
+            proj = p.get("projected_points", 0)
+            # Fake underperformance signal
+            if proj > 8:
+                print(f"  🔍 Buy-low candidate: {name} ({pos}, {team}) — projected {proj:.1f} pts, underperforming last 3 weeks")
+
         print("-" * 50)

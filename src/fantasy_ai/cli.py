@@ -1,4 +1,13 @@
 import argparse
+import os
+from dotenv import load_dotenv  # ✅ NEW: Load environment variables
+
+# Load .env file
+load_dotenv()
+
+# Ensure PYTHONPATH is set (optional but helpful for local imports)
+os.environ["PYTHONPATH"] = os.getenv("PYTHONPATH", "src")
+
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.delivery import send_email, send_discord
 from fantasy_ai.reports.weekly import weekly_report

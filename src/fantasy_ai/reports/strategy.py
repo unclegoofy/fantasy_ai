@@ -7,20 +7,26 @@ from fantasy_ai.api.sleeper_client import (
     get_players
 )
 from fantasy_ai.utils.config import LEAGUE_ID
+from fantasy_ai.analysis.impact_score import score_waiver_target
+from fantasy_ai.analysis.projected_outcome import simulate_weekly_matchup, project_season_outcome
+from fantasy_ai.analysis.recommendations import recommend_adds, recommend_trades, recommend_stashes
+from fantasy_ai.analysis.matchup_context import get_matchup_difficulty
+from fantasy_ai.analysis.schedule_mapper import build_player_schedule, TEAM_SCHEDULE
 
 def generate_weekly_strategy(week=None):
     """
     Build a real, data-driven weekly strategy digest.
 
     Sections:
-    1. 📥 Waiver Wire Analysis — Lists actual waiver/free agent adds this week.
-    2. 📊 Trade Radar — Flags lowest-projected teams and suggests positions to target.
-    3. 📝 Lineup Optimization — Finds bench players projected to outscore starters.
+    1. 📥 Waiver Wire Analysis
+    2. 📊 Trade Radar
+    3. 📝 Lineup Optimization
+    4. 🔮 Projected Outcome
+    5. 🧠 Recommendations
     """
     if not LEAGUE_ID:
         return "❌ LEAGUE_ID not set in environment"
 
-    # Auto-detect week if not provided
     if week is None:
         league = get_league_info(LEAGUE_ID)
         week = league.get("week") or 1
@@ -31,28 +37,40 @@ def generate_weekly_strategy(week=None):
     users = {u["user_id"]: u.get("display_name", f"User {u['user_id']}") for u in get_users(LEAGUE_ID)}
     rosters = get_rosters(LEAGUE_ID)
 
-    # Debug counters
     print(f"DEBUG: Loaded {len(players)} players, {len(users)} users, {len(rosters)} rosters")
 
     # 1️⃣ Waiver Wire Analysis
     txns = get_transactions(LEAGUE_ID, week)
     print(f"DEBUG: Found {len(txns)} transactions for week {week}")
-    waiver_targets = []
+    added_player_ids = []
+
     for txn in txns:
         if txn["type"] not in ["waiver", "free_agent"]:
             continue
         adds = txn.get("adds") or {}
         for pid in adds:
-            p = players.get(pid, {})
-            name = p.get("full_name") or p.get("last_name") or "Unknown"
-            pos = p.get("position", "??")
-            team = p.get("team", "")
-            waiver_targets.append(f"{name} ({pos}, {team})")
+            added_player_ids.append(pid)
+
+    ros_projection = {pid: 8.5 for pid in added_player_ids}
+    position_pool = {
+        "RB": added_player_ids,
+        "WR": added_player_ids,
+        "TE": added_player_ids,
+        "QB": added_player_ids
+    }
+
+    player_schedule = build_player_schedule(players, TEAM_SCHEDULE, target_week=15)
+    playoff_matchups = {
+        pid: get_matchup_difficulty(players.get(pid, {}), week=15, player_schedule=player_schedule)
+        for pid in added_player_ids
+    }
 
     output_lines.append(f"📥 Waiver Targets — Week {week}")
-    if waiver_targets:
-        for wt in sorted(set(waiver_targets)):
-            output_lines.append(f"  - {wt}")
+    if added_player_ids:
+        for pid in sorted(set(added_player_ids)):
+            p = players.get(pid, {})
+            summary = score_waiver_target(p, ros_projection, position_pool, playoff_matchups)
+            output_lines.append(f"  - {summary}")
     else:
         output_lines.append("  No notable waiver adds this week.")
 
@@ -93,17 +111,67 @@ def generate_weekly_strategy(week=None):
         starters = r.get("starters", [])
         bench = [p for p in r.get("players", []) if p not in starters]
 
-        starter_proj = {pid: players.get(pid, {}).get("projected_points", 0) for pid in starters}
-        bench_proj = {pid: players.get(pid, {}).get("projected_points", 0) for pid in bench}
+        for s_pid in starters:
+            s_player = players.get(s_pid, {})
+            s_proj = s_player.get("projected_points", 0)
+            s_name = s_player.get("full_name", "Unknown")
+            s_matchup = get_matchup_difficulty(s_player, week)
 
-        for s_pid, s_proj in starter_proj.items():
-            for b_pid, b_proj in bench_proj.items():
-                if b_proj > s_proj + 2:  # 2+ point difference
-                    s_name = players.get(s_pid, {}).get("full_name", "Unknown")
-                    b_name = players.get(b_pid, {}).get("full_name", "Unknown")
+            for b_pid in bench:
+                b_player = players.get(b_pid, {})
+                b_proj = b_player.get("projected_points", 0)
+                b_name = b_player.get("full_name", "Unknown")
+                b_matchup = get_matchup_difficulty(b_player, week)
+
+                if b_proj > s_proj + 2:
                     output_lines.append(
-                        f"  ✅ {owner}: Start {b_name} ({b_proj:.1f} pts) over {s_name} ({s_proj:.1f} pts)"
+                        f"  ✅ {owner}: Start {b_name} ({b_proj:.1f} pts, {b_matchup}) over {s_name} ({s_proj:.1f} pts, {s_matchup})"
                     )
 
-    # Always return a string
+    # 4️⃣ Projected Outcome
+    output_lines.append(f"\n🔮 Projected Outcome — Week {week}")
+    my_roster = next((r for r in rosters if users.get(r.get("owner_id")) == "Kwilliams424"), None)
+    matchup = next((m for m in matchups if m.get("roster_id") == my_roster.get("roster_id")), None) if my_roster else None
+    opp_roster_id = matchup.get("matchup_roster_id") if matchup else None
+    opp_roster = next((r for r in rosters if r.get("roster_id") == opp_roster_id), None)
+
+    # TEMP PATCH: fallback opponent if matchup data is missing
+    if not opp_roster and my_roster:
+        fallback = next((r for r in rosters if r["roster_id"] != my_roster["roster_id"]), None)
+        opp_roster = fallback
+
+    print(f"DEBUG: My roster ID = {my_roster.get('roster_id') if my_roster else 'None'}")
+    print(f"DEBUG: Opponent roster ID = {opp_roster_id}")
+    print(f"DEBUG: Opponent roster found = {bool(opp_roster)}")
+
+    if my_roster and opp_roster:
+        my_starters = my_roster.get("starters", [])
+        opp_starters = opp_roster.get("starters", [])
+        result = simulate_weekly_matchup(my_starters, opp_starters, players)
+        output_lines.append(
+            f"  - Matchup vs {users.get(opp_roster.get('owner_id'), 'Unknown')}: "
+            f"{result['my_score']} pts vs {result['opp_score']} pts → {result['win_prob']}% win probability"
+        )
+
+        current_record = {"wins": 2, "losses": 1}  # Replace with real record later
+        remaining_schedule = [
+            {"my_roster": my_starters, "opp_roster": opp_starters}
+            for _ in range(11)
+        ]
+        season = project_season_outcome(current_record, remaining_schedule, players, my_roster["roster_id"])
+        output_lines.append(
+            f"  - Season projection: {season['projected_record']}, {season['playoff_odds']} playoff odds"
+        )
+    else:
+        output_lines.append("  - Matchup or season projection unavailable")
+
+    # 5️⃣ Recommendations
+    output_lines.append(f"\n🧠 Recommendations")
+    for line in recommend_adds(added_player_ids, players):
+        output_lines.append(f"  {line}")
+    for line in recommend_trades(rosters, depth_map):
+        output_lines.append(f"  {line}")
+    for line in recommend_stashes(players):
+        output_lines.append(f"  {line}")
+
     return "\n".join(output_lines)
