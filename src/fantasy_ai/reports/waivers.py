@@ -3,10 +3,9 @@ from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.helpers import normalize_name
 
 def waivers(week=None, ros_scores=None):
-    """Show waiver pickups and drops for a given week."""
+    """Return waiver pickups and drops for a given week as a string."""
     if not LEAGUE_ID:
-        print("❌ LEAGUE_ID not set in environment")
-        return
+        return "❌ LEAGUE_ID not set in environment"
 
     week = week or 1
     players = fetch_players()
@@ -14,11 +13,11 @@ def waivers(week=None, ros_scores=None):
     rosters = fetch_rosters(LEAGUE_ID)
     txns = fetch_transactions(LEAGUE_ID, week)
 
-    print(f"\n📥 Waiver Activity — Week {week}\n")
+    output = [f"\n📥 Waiver Activity — Week {week}\n"]
 
     if not txns:
-        print("No waiver transactions found.")
-        return
+        output.append("No waiver transactions found.")
+        return "\n".join(output)
 
     for txn in txns:
         if txn["type"] not in ["waiver", "free_agent", "trade"]:
@@ -49,7 +48,7 @@ def waivers(week=None, ros_scores=None):
             pos = p.get("position", "??")
             score = ros_scores.get(pid, 0) if ros_scores else None
             annotation = f" — ROS: {score:.1f}" if score else ""
-            print(f"➕ {name:25} ({pos}) added by {creator}{annotation}")
+            output.append(f"➕ {name:25} ({pos}) added by {creator}{annotation}")
 
         for pid in drops:
             p = players.get(pid, {})
@@ -57,9 +56,11 @@ def waivers(week=None, ros_scores=None):
             if p.get("position") == "DEF" and not p.get("full_name"):
                 name = f"{p.get('team', 'Unknown')} DEF"
             pos = p.get("position", "??")
-            print(f"➖ {name:25} ({pos}) dropped by {creator}")
+            output.append(f"➖ {name:25} ({pos}) dropped by {creator}")
 
         if txn["type"] == "trade":
-            print(f"🔄 Trade executed by {creator}")
+            output.append(f"🔄 Trade executed by {creator}")
 
-        print("-" * 50)
+        output.append("-" * 50)
+
+    return "\n".join(output)

@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fantasy_ops_suite"
+version = "0.1.0"
+description = "Modular, scalable analytics suite for fantasy football strategy and automation"
+authors = [{ name = "Ken Williams" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "requests",
+    "click>=8.1",
+    "matplotlib",
+    "scikit-learn",
+    "pyyaml",
+    "jinja2"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "isort",
+    "mypy",
+    "pylint",
+    "pytest",
+    "pre-commit"
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+skip-string-normalization = false
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_third_party = ["pandas", "numpy", "requests", "click", "matplotlib", "sklearn", "yaml", "jinja2"]
+known_first_party = ["fantasy_ops_suite"]
+default_section = "THIRDPARTY"
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
+docstring-convention = "google"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict = true
+
+[tool.pylint]
+disable = ["missing-docstring", "invalid-name"]
+max-line-length = 100
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pre-commit]
+repos = [
+    { repo = "https://github.com/psf/black", rev = "24.3.0", hooks = [{ id = "black" }] },
+    { repo = "https://github.com/PyCQA/isort", rev = "5.12.0", hooks = [{ id = "isort" }] },
+    { repo = "https://github.com/PyCQA/flake8", rev = "6.1.0", hooks = [{ id = "flake8" }] },
+    { repo = "https://github.com/pre-commit/pre-commit-hooks", rev = "v4.4.0", hooks = [
+        { id = "trailing-whitespace" },
+        { id = "end-of-file-fixer" },
+        { id = "check-yaml" }
+    ]}
+]

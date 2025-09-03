@@ -22,8 +22,10 @@ def weekly_report(week_override=None, include_ros=False):
 
     week = week_override or reported_week
     if not isinstance(week, int) or week < 1 or week > 18:
-        print(f"ℹ️ Sleeper reports week {reported_week} — likely off-season. Defaulting to week 1.")
         week = 1
+        off_season_note = f"ℹ️ Sleeper reports week {reported_week} — likely off-season. Defaulting to week 1."
+    else:
+        off_season_note = None
 
     users = {u["user_id"]: u.get("display_name", f"User {u['user_id']}") for u in fetch_users(LEAGUE_ID)}
     rosters = fetch_rosters(LEAGUE_ID)
@@ -40,10 +42,11 @@ def weekly_report(week_override=None, include_ros=False):
         scores = [ros_scores.get(pid, 0) for pid in roster.get("players", [])]
         return round(sum(scores) / len(scores), 1) if scores else 0
 
-    buffer = StringIO()
-    sys.stdout = buffer
+    output = []
+    if off_season_note:
+        output.append(off_season_note)
 
-    print(f"\n🏈 Weekly Report — {league.get('name')} (Season {season}) — Week {week}\n")
+    output.append(f"\n🏈 Weekly Report — {league.get('name')} (Season {season}) — Week {week}\n")
 
     seen_matchups = set()
     for m in matchups:
@@ -75,12 +78,6 @@ def weekly_report(week_override=None, include_ros=False):
             line1 += f" — ROS avg: {ros1:.1f}"
             line2 += f" — ROS avg: {ros2:.1f}"
 
-        print(line1)
-        print(line2)
-        print("-" * 50)
+        output.extend([line1, line2, "-" * 50])
 
-    sys.stdout = sys.__stdout__
-    return buffer.getvalue()
-
-if __name__ == "__main__":
-    print(weekly_report())
+    return "\n".join(output)

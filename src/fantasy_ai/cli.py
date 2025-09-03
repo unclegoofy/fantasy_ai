@@ -19,7 +19,7 @@ from fantasy_ai.cli_helpers import fetch_current_week
 from fantasy_ai.reports.weekly import weekly_report
 from fantasy_ai.reports.waivers import waivers
 from fantasy_ai.reports.trade_radar import trade_radar
-from fantasy_ai.reports.strategy import generate_weekly_strategy
+from fantasy_ai.analysis.strategist import generate_strategy_digest
 from fantasy_ai.reports.digest import digest
 
 def run_digest(week: int):

@@ -7,20 +7,27 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
+def _mask(s): return s[:2] + "****" + s[-2:] if s else "None"
+
 # Debug print to confirm .env is loading
 print("SMTP config:", {
     "provider": os.getenv("EMAIL_PROVIDER"),
     "host": os.getenv("SMTP_HOST"),
     "port": os.getenv("SMTP_PORT"),
     "user": os.getenv("SMTP_USER"),
-    "pass": os.getenv("SMTP_PASS"),
+    "pass": _mask(os.getenv("SMTP_PASS")),
     "to": os.getenv("EMAIL_TO"),
     "send_from": os.getenv("SMTP_FROM"),
-    "sendgrid_key": os.getenv("SENDGRID_API_KEY")
+    "sendgrid_key": _mask(os.getenv("SENDGRID_API_KEY"))
 })
 
 def send_email(subject: str, body: str):
+    if not body or len(body.strip()) < 10:
+        print("⚠️ Email body appears empty or too short — skipping send.")
+        return
+
     provider = os.getenv("EMAIL_PROVIDER", "gmail").lower()
+    print(f"📤 Email body preview:\n{body[:300]}...\n---")
 
     if provider == "sendgrid":
         send_via_sendgrid(subject, body)
@@ -94,13 +101,20 @@ def send_discord(body: str):
         print("❌ DISCORD_WEBHOOK not set in .env")
         return
 
+    if not body or len(body.strip()) < 10:
+        print("⚠️ Discord body appears empty or too short — skipping send.")
+        return
+
+    print(f"📤 Discord body preview:\n{body[:300]}...\n---")
+
     chunks = [body[i:i+1700] for i in range(0, len(body), 1700)]
 
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
+        payload = {"content": f"📦 Digest Part {i+1}:\n{chunk}"}
         try:
-            response = requests.post(webhook, json={"content": chunk})
+            response = requests.post(webhook, json=payload)
             if response.status_code == 204:
-                print("💬 Discord message sent.")
+                print(f"💬 Discord message sent (Part {i+1}).")
             else:
                 print(f"❌ Discord delivery failed: {response.status_code} {response.text}")
         except Exception as e:
