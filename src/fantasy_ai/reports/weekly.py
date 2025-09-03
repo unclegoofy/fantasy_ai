@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.weekly
+
+Generates weekly matchup reports with projections and optional
+rest-of-season scoring averages.
+"""
+
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.fetch import (
     fetch_league_info,

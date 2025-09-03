@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.trade_radar
+
+Identifies potential trade opportunities based on projected points,
+positional depth, and ROS scores.
+"""
+
 from fantasy_ai.utils.fetch import (
     fetch_league_info,
     fetch_matchups,

@@ -3,7 +3,8 @@ fantasy_ai/utils/config.py
 --------------------------
 Centralized environment/config loader for Fantasy AI.
 Loads variables from the .env file into constants so they can
-be imported anywhere in the project.
+be imported anywhere in the project. Holds configuration constants and environment variable lookups
+for league settings, API keys, and delivery parameters.
 """
 
 import os

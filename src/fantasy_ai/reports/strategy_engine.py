@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.strategy_engine
+
+Legacy or experimental strategy generation logic.
+Consider merging into strategy.py if still in use.
+"""
+
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.fetch import (
     fetch_league_info,

@@ -1,8 +1,8 @@
 """
-fantasy_ai/utils/fetch.py
--------------------------
-Minimal client for Sleeper.com’s public API.
-Provides typed wrapper functions for common league data needs.
+fantasy_ai.utils.fetch
+
+Provides functions to fetch data from the Sleeper API, including
+league info, rosters, matchups, transactions, and player data.
 """
 
 import os

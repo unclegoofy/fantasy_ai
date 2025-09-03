@@ -1,4 +1,9 @@
-# fantasy_ai/analysis/projected_outcome.py
+"""
+fantasy_ai.analysis.projected_outcome
+
+Generates projected outcomes for matchups based on current rosters,
+player projections, and scoring settings.
+"""
 
 def simulate_weekly_matchup(my_roster, opponent_roster, players):
     """

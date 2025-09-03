@@ -1,3 +1,11 @@
+"""
+fantasy_ai.cli
+
+Command-line interface entry point for the Fantasy AI toolkit.
+Parses CLI arguments, orchestrates report generation, and triggers
+analysis modules. Intended for local execution or automation workflows.
+"""
+
 import argparse
 import os
 import sys
