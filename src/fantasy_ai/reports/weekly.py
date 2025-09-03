@@ -15,6 +15,7 @@ from fantasy_ai.utils.fetch import (
 )
 from fantasy_ai.scoring.ros_score import generate_ros_scores
 
+
 def weekly_report(week_override=None, include_ros=False):
     """Generate weekly matchup report with projections and optional ROS scoring."""
     if not LEAGUE_ID:
@@ -67,10 +68,14 @@ def weekly_report(week_override=None, include_ros=False):
         name1 = roster_owner_map.get(t1["roster_id"], f"Roster {t1['roster_id']}")
         name2 = roster_owner_map.get(t2["roster_id"], f"Roster {t2['roster_id']}")
 
-        pts1 = float(t1.get("points", 0))
-        proj1 = float(t1.get("projected_points", 0))
-        pts2 = float(t2.get("points", 0))
-        proj2 = float(t2.get("projected_points", 0))
+        # Use actual points if available, otherwise fall back to display_points
+        pts1_actual = float(t1.get("points", 0) or 0.0)
+        proj1 = float(t1.get("display_points", t1.get("projected_points", 0)) or 0.0)
+        pts1 = pts1_actual if pts1_actual > 0 else proj1
+
+        pts2_actual = float(t2.get("points", 0) or 0.0)
+        proj2 = float(t2.get("display_points", t2.get("projected_points", 0)) or 0.0)
+        pts2 = pts2_actual if pts2_actual > 0 else proj2
 
         ros1 = avg_ros(next((r for r in rosters if r["roster_id"] == t1["roster_id"]), {})) if include_ros else None
         ros2 = avg_ros(next((r for r in rosters if r["roster_id"] == t2["roster_id"]), {})) if include_ros else None

@@ -27,6 +27,7 @@ from fantasy_ai.reports.weekly import weekly_report
 from fantasy_ai.reports.waivers import waivers
 from fantasy_ai.reports.trade_radar import trade_radar
 from fantasy_ai.reports.digest import digest
+from fantasy_ai.reports.strategy_engine import generate_weekly_strategy 
 
 def run_digest(week: int):
     """Generate full digest and send via email/Discord."""
