@@ -67,9 +67,10 @@ def weekly_report(week_override=None, include_ros=False):
         name1 = roster_owner_map.get(t1["roster_id"], f"Roster {t1['roster_id']}")
         name2 = roster_owner_map.get(t2["roster_id"], f"Roster {t2['roster_id']}")
 
-        pts1 = float(t1.get("points", 0))
+        # Use display_points (actual or projection fallback)
+        pts1 = float(t1.get("display_points", 0))
         proj1 = float(t1.get("projected_points", 0))
-        pts2 = float(t2.get("points", 0))
+        pts2 = float(t2.get("display_points", 0))
         proj2 = float(t2.get("projected_points", 0))
 
         ros1 = avg_ros(next((r for r in rosters if r["roster_id"] == t1["roster_id"]), {})) if include_ros else None

@@ -56,8 +56,16 @@ def fetch_rostered(league_id: str, user_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 def fetch_matchups(league_id: str, week: int) -> List[Dict[str, Any]]:
-    """Fetch all matchups for a specific week in the given league."""
-    return fetch(f"league/{league_id}/matchups/{week}")
+    """
+    Fetch all matchups for a specific week in the given league.
+    Adds a 'display_points' key that falls back to projected_points if points == 0.
+    """
+    matchups = fetch(f"league/{league_id}/matchups/{week}")
+    for m in matchups:
+        actual = float(m.get("points", 0) or 0.0)
+        proj = float(m.get("projected_points", 0) or 0.0)
+        m["display_points"] = actual if actual > 0 else proj
+    return matchups
 
 def fetch_transactions(league_id: str, week: int) -> List[Dict[str, Any]]:
     """Fetch all transactions (waivers, trades, drops) for a given week."""
@@ -75,6 +83,6 @@ def fetch_drafts(league_id: str) -> List[Dict[str, Any]]:
 
 def fetch_state() -> Dict[str, Any]:
     """Fetch global Sleeper state (current NFL week, season, etc)."""
-        # TODO: Used by GitHub Actions workflow (strategy.yaml) for league state checks.
-        # Called indirectly via CLI / automation, so vulture will flag as unused.
+    # TODO: Used by GitHub Actions workflow (strategy.yaml) for league state checks.
+    # Called indirectly via CLI / automation, so vulture will flag as unused.
     return fetch("state")
