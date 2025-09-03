@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.waivers
+
+Generates waiver wire activity reports for a given week,
+annotated with optional ROS scores.
+"""
+
 from fantasy_ai.utils.fetch import fetch_users, fetch_rosters, fetch_transactions, fetch_players
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.helpers import normalize_name

@@ -1,4 +1,9 @@
-# fantasy_ai/analysis/matchup_context.py
+"""
+fantasy_ai.analysis.matchup_context
+
+Provides contextual data for weekly matchups, including opponent strength,
+schedule difficulty, and player availability.
+"""
 
 # Mock defensive rankings by position (FantasyPros-style)
 

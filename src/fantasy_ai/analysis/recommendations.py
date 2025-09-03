@@ -1,4 +1,8 @@
-# fantasy_ai/analysis/recommendations.py
+"""
+fantasy_ai.analysis.recommendations
+
+Generates actionable recommendations for trades, waivers, and lineup changes.
+"""
 
 def recommend_adds(waiver_pool, players):
     """Suggest waiver adds based on projection and playoff matchup."""

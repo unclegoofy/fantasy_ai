@@ -1,3 +1,10 @@
+"""
+fantasy_ai.utils.delivery
+
+Handles output delivery channels such as email, Discord, or other
+integrations. Uses configuration from utils.config.
+"""
+
 import os
 import smtplib
 import requests

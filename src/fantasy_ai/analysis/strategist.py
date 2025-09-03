@@ -1,3 +1,10 @@
+"""
+fantasy_ai.analysis.strategist
+
+Core strategic analysis engine. Combines multiple analysis modules
+to produce a unified strategy digest.
+"""
+
 from fantasy_ai.utils.config import LEAGUE_ID, SLEEPER_DISPLAY_NAME
 from fantasy_ai.utils.fetch import (
     fetch_league_info,
