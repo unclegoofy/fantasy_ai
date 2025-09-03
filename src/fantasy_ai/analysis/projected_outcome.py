@@ -25,7 +25,7 @@ def simulate_weekly_matchup(my_roster, opponent_roster, players):
         "win_prob": round(win_prob, 1)
     }
 
-def project_season_outcome(current_record, remaining_schedule, players, my_roster_id):
+def project_season_outcome(current_record, remaining_schedule, players):
     """
     Simulates remaining games and returns projected record and playoff odds.
     """
