@@ -15,6 +15,7 @@ from fantasy_ai.utils.fetch import (
 )
 from fantasy_ai.scoring.ros_score import generate_ros_scores
 
+
 def weekly_report(week_override=None, include_ros=False):
     """Generate weekly matchup report with projections and optional ROS scoring."""
     if not LEAGUE_ID:

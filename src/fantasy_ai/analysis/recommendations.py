@@ -1,36 +1,85 @@
 """
 fantasy_ai.analysis.recommendations
 
-Generates actionable recommendations for trades, waivers, and lineup changes.
+Provides tactical suggestions for adds, trades, and stashes based on
+roster context, positional depth, and ROS upside.
 """
 
-def recommend_adds(waiver_pool, players):
-    """Suggest waiver adds based on projection and playoff matchup."""
-    suggestions = []
-    for pid in waiver_pool:
-        p = players.get(pid, {})
-        proj = p.get("projected_points", 0)
-        pos = p.get("position", "UNK")
-        team = p.get("team", "")
-        if proj >= 8:
-            suggestions.append(f"✅ Add {p.get('full_name', 'Unknown')} ({pos}, {team}) — projected {proj:.1f} pts")
-    return suggestions
+from fantasy_ai.utils.helpers import normalize_name
 
-def recommend_trades(rosters, depth_map):
-    """Suggest trade targets based on positional scarcity."""
-    tips = []
-    for name, depth in depth_map.items():
+
+def recommend_adds(added_player_ids, players, my_display_name=None, users=None, rosters=None):
+    """
+    Recommend adds based on your own waiver activity.
+    """
+    if not added_player_ids or not players:
+        return []
+
+    lines = []
+    for pid in added_player_ids:
+        p = players.get(pid, {})
+        name = normalize_name(p)
+        pos = p.get("position", "UNK")
+        team = p.get("team", "FA")
+        lines.append(f"Added {name} ({pos}, {team}) — monitor usage this week")
+
+    return lines
+
+
+def recommend_trades(rosters, depth_map=None, my_display_name=None):
+    """
+    Recommend trade moves based on your positional depth.
+    """
+    if not rosters or not my_display_name:
+        return []
+
+    lines = []
+    for r in rosters:
+        owner_id = r.get("owner_id")
+        owner_name = r.get("display_name", f"User {owner_id}")
+        if owner_name != my_display_name:
+            continue
+
+        # Build depth map for this roster
+        depth = {}
+        for pid in r.get("players", []):
+            p = r.get("player_metadata", {}).get(pid, {})
+            pos = p.get("position", "UNK")
+            depth[pos] = depth.get(pos, 0) + 1
+
         for pos in ["RB", "WR", "TE", "QB"]:
             if depth.get(pos, 0) < 2:
-                for other_name, other_depth in depth_map.items():
-                    if other_name != name and other_depth.get(pos, 0) > 3:
-                        tips.append(f"🔁 {name} should trade for a {pos} from {other_name} (depth: {other_depth[pos]})")
-    return tips
+                lines.append(f"Consider trading for a {pos} — current depth: {depth.get(pos, 0)}")
 
-def recommend_stashes(players, playoff_weeks=[15, 16, 17]):
-    """Suggest stashes based on playoff matchups and upside."""
-    stash_list = []
-    for pid, p in players.items():
-        if p.get("projected_points", 0) >= 7 and p.get("position") in ["RB", "WR", "TE"]:
-            stash_list.append(f"📦 Stash {p.get('full_name', 'Unknown')} — upside for Weeks {playoff_weeks}")
-    return stash_list[:5]  # Limit to top 5
+    return lines
+
+
+def recommend_stashes(players, roster=None, ros_scores=None, limit=5):
+    """
+    Suggest stash candidates based on positional need and ROS upside.
+    Only considers players not already on the roster.
+    """
+    if not roster:
+        return []
+
+    rostered_ids = set(roster.get("players", []))
+    depth_map = {}
+    for pid in rostered_ids:
+        p = players.get(pid, {})
+        pos = p.get("position", "UNK")
+        depth_map[pos] = depth_map.get(pos, 0) + 1
+
+    # Filter unrostered players
+    unrostered = [pid for pid in players if pid not in rostered_ids]
+
+    stash_candidates = []
+    for pid in unrostered:
+        p = players.get(pid, {})
+        pos = p.get("position", "UNK")
+        team = p.get("team", "FA")
+        ros_val = ros_scores.get(pid, 0.0) if ros_scores else 0.0
+        if depth_map.get(pos, 0) < 2 and ros_val > 120:
+            stash_candidates.append((ros_val, normalize_name(p), pos, team))
+
+    stash_candidates.sort(reverse=True)
+    return [f"Stash {name} ({pos}, {team}) — ROS: {ros:.1f}" for ros, name, pos, team in stash_candidates[:limit]]

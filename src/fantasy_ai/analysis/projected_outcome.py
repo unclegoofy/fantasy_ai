@@ -5,21 +5,26 @@ Generates projected outcomes for matchups based on current rosters,
 player projections, and scoring settings.
 """
 
-def simulate_weekly_matchup(my_roster, opponent_roster, players):
+def simulate_weekly_matchup(my_roster_ids, opp_roster_ids, matchups):
     """
     Returns projected points for both teams and win probability.
-    Prefers 'display_points' if present (from fetch_matchups), falls back to 'projected_points'.
-    """
-    def total_proj(roster):
-        total = 0.0
-        for pid in roster:
-            p = players.get(pid, {})
-            pts = p.get("display_points", p.get("projected_points", 0)) or 0.0
-            total += float(pts)
-        return total
 
-    my_score = total_proj(my_roster)
-    opp_score = total_proj(opponent_roster)
+    Uses player-level projections from each matchup's 'player_points' dict
+    (populated by fetch_matchups) if available. Falls back to 0.0 if no
+    projection is found for a player.
+    """
+    # Build a single player_id -> projection map from all matchups
+    player_proj_map = {}
+    for m in matchups:
+        player_points = m.get("player_points", {}) or {}
+        for pid, pts in player_points.items():
+            player_proj_map[str(pid)] = float(pts or 0.0)
+
+    def total_proj(roster_ids):
+        return sum(float(player_proj_map.get(str(pid), 0.0)) for pid in roster_ids)
+
+    my_score = total_proj(my_roster_ids)
+    opp_score = total_proj(opp_roster_ids)
 
     # Simple win probability model
     diff = my_score - opp_score
@@ -37,10 +42,11 @@ def simulate_weekly_matchup(my_roster, opponent_roster, players):
     }
 
 
-def project_season_outcome(current_record, remaining_schedule, players):
+def project_season_outcome(current_record, remaining_schedule, matchups):
     """
     Simulates remaining games and returns projected record and playoff odds.
-    Uses 'display_points' if available for consistency with live projections.
+
+    Uses player-level projections from matchups['player_points'] if available.
     """
     wins = current_record.get("wins", 0)
     losses = current_record.get("losses", 0)
@@ -48,13 +54,12 @@ def project_season_outcome(current_record, remaining_schedule, players):
     for matchup in remaining_schedule:
         my_roster = matchup.get("my_roster", [])
         opp_roster = matchup.get("opp_roster", [])
-        result = simulate_weekly_matchup(my_roster, opp_roster, players)
+        result = simulate_weekly_matchup(my_roster, opp_roster, matchups)
         if result["win_prob"] >= 50:
             wins += 1
         else:
             losses += 1
 
-    # Simple playoff odds model based on projected wins
     playoff_odds = (
         100 if wins >= 9 else
         70 if wins >= 7 else
