@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.weekly
+
+Generates weekly matchup reports with projections and optional
+rest-of-season scoring averages.
+"""
+
 from fantasy_ai.utils.config import LEAGUE_ID
 from fantasy_ai.utils.fetch import (
     fetch_league_info,
@@ -7,9 +14,6 @@ from fantasy_ai.utils.fetch import (
     fetch_players
 )
 from fantasy_ai.scoring.ros_score import generate_ros_scores
-from io import StringIO
-import sys
-from fantasy_ai.utils.helpers import normalize_name
 
 def weekly_report(week_override=None, include_ros=False):
     """Generate weekly matchup report with projections and optional ROS scoring."""

@@ -1,4 +1,9 @@
-# fantasy_ai/analytics/impact_score.py
+"""
+fantasy_ai.analysis.impact_score
+
+Calculates player impact scores based on performance metrics,
+matchup difficulty, and positional value.
+"""
 
 def score_waiver_target(player, ros_projection, position_pool, playoff_matchups):
     """

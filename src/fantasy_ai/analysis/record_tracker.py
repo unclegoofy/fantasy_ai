@@ -1,4 +1,8 @@
-# fantasy_ai/analysis/record_tracker.py
+"""
+fantasy_ai.analysis.record_tracker
+
+Tracks team records, streaks, and playoff qualification scenarios.
+"""
 
 def calculate_team_record(roster_id, matchups):
     """
