@@ -9,12 +9,14 @@ import os
 import smtplib
 import requests
 from email.message import EmailMessage
+from email.utils import formataddr
 from dotenv import load_dotenv
 
 # Load environment variables from .env
 load_dotenv()
 
-def _mask(s): return s[:2] + "****" + s[-2:] if s else "None"
+def _mask(s): 
+    return s[:2] + "****" + s[-2:] if s else "None"
 
 # Debug print to confirm .env is loading
 print("SMTP config:", {
@@ -49,7 +51,10 @@ def send_via_gmail(subject: str, body: str):
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
     email_to = os.getenv("EMAIL_TO")
-    send_from = os.getenv("SMTP_FROM") or smtp_user
+
+    # This is the display name + address you want recipients to see
+    custom_from_name = "Williams95 Fantasy Football"
+    custom_from_email = "fantasyfootball@williams95.us"
 
     if not all([smtp_host, smtp_port, smtp_user, smtp_pass, email_to]):
         print("❌ Missing Gmail SMTP configuration in .env")
@@ -57,7 +62,8 @@ def send_via_gmail(subject: str, body: str):
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = send_from
+    # Explicitly set From header with display name + custom address
+    msg["From"] = formataddr((custom_from_name, custom_from_email))
     msg["To"] = email_to
     msg.set_content(body)
 
@@ -75,15 +81,18 @@ def send_via_gmail(subject: str, body: str):
 def send_via_sendgrid(subject: str, body: str):
     api_key = os.getenv("SENDGRID_API_KEY")
     email_to = os.getenv("EMAIL_TO")
-    send_from = os.getenv("SMTP_FROM")
 
-    if not all([api_key, email_to, send_from]):
+    # Match the same display name + address for SendGrid sends
+    custom_from_name = "Williams95 Fantasy Football"
+    custom_from_email = "fantasyfootball@williams95.us"
+
+    if not all([api_key, email_to, custom_from_email]):
         print("❌ Missing SendGrid configuration in .env")
         return
 
     payload = {
         "personalizations": [{"to": [{"email": email_to}]}],
-        "from": {"email": send_from},
+        "from": {"email": custom_from_email, "name": custom_from_name},
         "subject": subject,
         "content": [{"type": "text/plain", "value": body}]
     }
