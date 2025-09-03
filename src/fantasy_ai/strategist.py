@@ -6,13 +6,13 @@ Pulls your roster, scoring settings, and matchups to produce
 tactical recommendations for waivers, trades, and lineup optimization.
 """
 
-from fantasy_ai.api.sleeper_client import (
-    get_league_info,
-    get_users,
-    get_rostered,
-    get_players,
-    get_matchups,
-    get_scoring_settings,
+from fantasy_ai.utils.fetch import (
+    fetch_league_info,
+    fetch_users,
+    fetch_rostered,
+    fetch_players,
+    fetch_matchups,
+    fetch_scoring_settings,
 )
 from fantasy_ai.utils.config import LEAGUE_ID, SLEEPER_DISPLAY_NAME
 
@@ -22,8 +22,8 @@ def generate_weekly_strategy(week: int) -> str:
     print("DEBUG: strategist.py is running from:", __file__)
     print("DEBUG: SLEEPER_DISPLAY_NAME =", repr(SLEEPER_DISPLAY_NAME))
 
-    league = get_league_info(LEAGUE_ID)
-    users = get_users(LEAGUE_ID)
+    league = fetch_league_info(LEAGUE_ID)
+    users = fetch_users(LEAGUE_ID)
 
     # Debug: show all display names in the league
     print("DEBUG: Sleeper users:", [u["display_name"] for u in users])
@@ -45,13 +45,13 @@ def generate_weekly_strategy(week: int) -> str:
     if not user_id:
         return f"❌ Unable to resolve user_id for display name containing '{target_name}'"
 
-    roster = get_rostered(LEAGUE_ID, user_id)
+    roster =fetch_rostered(LEAGUE_ID, user_id)
     if not roster:
         return f"❌ Unable to fetch roster for user_id {user_id}"
 
-    players = get_players()
-    scoring = get_scoring_settings(LEAGUE_ID)
-    matchups = get_matchups(LEAGUE_ID, week)
+    players = fetch_players()
+    scoring = fetch_scoring_settings(LEAGUE_ID)
+    matchups = fetch_matchups(LEAGUE_ID, week)
 
     # Tactical analysis stubs — replace with real logic as needed
     analysis = analyze_roster(roster, players, scoring)
