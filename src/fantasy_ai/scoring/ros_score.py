@@ -1,3 +1,10 @@
+"""
+fantasy_ai.scoring.ros_score
+
+Calculates rest-of-season (ROS) scores for all players based on
+projections, performance trends, and positional value.
+"""
+
 def generate_ros_scores(players: dict) -> dict:
     """
     Generate rest-of-season scores for Sleeper players using ADP and position weighting.

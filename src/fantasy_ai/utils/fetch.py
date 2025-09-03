@@ -1,8 +1,8 @@
 """
-fantasy_ai/utils/fetch.py
--------------------------
-Minimal client for Sleeper.com’s public API.
-Provides typed wrapper functions for common league data needs.
+fantasy_ai.utils.fetch
+
+Provides functions to fetch data from the Sleeper API, including
+league info, rosters, matchups, transactions, and player data.
 """
 
 import os
@@ -69,8 +69,12 @@ def fetch_players() -> Dict[str, Dict[str, Any]]:
 
 def fetch_drafts(league_id: str) -> List[Dict[str, Any]]:
     """Fetch draft metadata for the given league (useful for dynasty/keeper)."""
+    # TODO: Used by GitHub Actions workflow (strategy.yaml) for draft analysis.
+    # Called indirectly via CLI / automation, so vulture will flag as unused.
     return fetch(f"league/{league_id}/drafts")
 
 def fetch_state() -> Dict[str, Any]:
     """Fetch global Sleeper state (current NFL week, season, etc)."""
+        # TODO: Used by GitHub Actions workflow (strategy.yaml) for league state checks.
+        # Called indirectly via CLI / automation, so vulture will flag as unused.
     return fetch("state")

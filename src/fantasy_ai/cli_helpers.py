@@ -1,3 +1,10 @@
+"""
+fantasy_ai.cli_helpers
+
+Helper functions for CLI commands, including argument parsing,
+output formatting, and integration with report/analysis modules.
+"""
+
 from fantasy_ai.utils.fetch import fetch_league_info
 from fantasy_ai.utils.config import LEAGUE_ID
 

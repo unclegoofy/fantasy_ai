@@ -1,4 +1,8 @@
-# fantasy_ai/analysis/schedule_mapper.py
+"""
+fantasy_ai.analysis.schedule_mapper
+
+Maps and analyzes team schedules for strength-of-schedule insights.
+"""
 
 TEAM_SCHEDULE = {
     "CAR": {15: "CIN"},

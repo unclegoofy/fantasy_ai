@@ -1,3 +1,10 @@
+"""
+fantasy_ai.reports.trade_radar
+
+Identifies potential trade opportunities based on projected points,
+positional depth, and ROS scores.
+"""
+
 from fantasy_ai.utils.fetch import (
     fetch_league_info,
     fetch_matchups,
@@ -15,7 +22,7 @@ def trade_radar(week_override=None, ros_scores=None):
         return "❌ LEAGUE_ID not set in environment"
 
     week = week_override or 1
-    league = fetch_league_info(LEAGUE_ID)
+    fetch_league_info(LEAGUE_ID)
     users = {u["user_id"]: u.get("display_name", f"User {u['user_id']}") for u in fetch_users(LEAGUE_ID)}
     rosters = fetch_rosters(LEAGUE_ID)
     matchups = fetch_matchups(LEAGUE_ID, week)

@@ -1,7 +1,14 @@
+"""
+fantasy_ai.cli
+
+Command-line interface entry point for the Fantasy AI toolkit.
+Parses CLI arguments, orchestrates report generation, and triggers
+analysis modules. Intended for local execution or automation workflows.
+"""
+
 import argparse
 import os
 import sys
-from io import StringIO
 from dotenv import load_dotenv
 
 # 🔧 Load environment variables from .env
@@ -19,7 +26,6 @@ from fantasy_ai.cli_helpers import fetch_current_week
 from fantasy_ai.reports.weekly import weekly_report
 from fantasy_ai.reports.waivers import waivers
 from fantasy_ai.reports.trade_radar import trade_radar
-from fantasy_ai.analysis.strategist import generate_strategy_digest
 from fantasy_ai.reports.digest import digest
 
 def run_digest(week: int):

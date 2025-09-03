@@ -1,3 +1,10 @@
+"""
+fantasy_ai.analysis.lineup_optimizer
+
+Suggests optimal starting lineups based on projections, ROS scores,
+and positional depth.
+"""
+
 from fantasy_ai.utils.helpers import normalize_name
 
 def suggest_lineup_swaps(rosters, players, ros_scores, week):

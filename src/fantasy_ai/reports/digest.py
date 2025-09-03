@@ -1,3 +1,11 @@
+"""
+fantasy_ai.reports.digest
+
+Generates the full weekly digest by combining reports from
+weekly matchups, waiver activity, strategy recommendations,
+and trade radar.
+"""
+
 from fantasy_ai.scoring.ros_score import generate_ros_scores
 from fantasy_ai.utils.fetch import fetch_players
 from fantasy_ai.utils.config import LEAGUE_ID
