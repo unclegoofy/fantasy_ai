@@ -123,8 +123,44 @@ def generate_weekly_strategy(week=None, ros_scores=None):
         )
     )
 
-    # 📝 Lineup Tips
+    # 📝 Lineup Tips — position-aware
     output_lines.append(f"\n📝 Lineup Tips — Week {week}")
+
+    FLEX_POSITIONS = {"WR", "RB", "TE"}
+
+    def suggest_lineup_swaps(rosters, players, ros_scores, week, player_proj_map=None, users=None, my_display_name=None):
+        tips = []
+        my_roster = next((r for r in rosters if users.get(r.get("owner_id")) == my_display_name), None)
+        if not my_roster:
+            return tips
+
+        starters = my_roster.get("starters", [])
+        bench = [pid for pid in my_roster.get("players", []) if pid not in starters]
+
+        for starter_id in starters:
+            starter = players.get(starter_id, {})
+            starter_proj = player_proj_map.get(str(starter_id), 0.0)
+            starter_name = normalize_name(starter)
+            starter_pos = starter.get("position", "UNK")
+
+            for bench_id in bench:
+                bench_player = players.get(bench_id, {})
+                bench_proj = player_proj_map.get(str(bench_id), 0.0)
+                bench_name = normalize_name(bench_player)
+                bench_pos = bench_player.get("position", "UNK")
+
+                # Only compare same-position or FLEX-compatible swaps
+                same_pos = starter_pos == bench_pos
+                flex_swap = starter_pos in FLEX_POSITIONS and bench_pos in FLEX_POSITIONS
+
+                if (same_pos or flex_swap) and bench_proj > starter_proj + 1.0:
+                    tips.append(
+                        f"  ✅ {my_display_name}: Start {bench_name} ({bench_proj:.1f}) over {starter_name} ({starter_proj:.1f})"
+                    )
+
+    return tips
+
+    # Extend with filtered tips
     output_lines.extend(
         suggest_lineup_swaps(
             rosters,
